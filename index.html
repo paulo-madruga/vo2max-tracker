@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VO₂MAX">
+<meta name="theme-color" content="#0a0a0c">
+<title>VO₂ MAX — Interval Protocol</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400&display=swap');
+
+:root {
+  --bg: #0a0a0c;
+  --surface: #111116;
+  --surface2: #18181f;
+  --border: #2a2a35;
+  --border-active: #444455;
+  --text: #e8e8f0;
+  --text-dim: #6a6a80;
+  --text-dimmer: #3a3a4a;
+  --accent: #00e5ff;
+  --accent-dim: rgba(0,229,255,0.15);
+  --accent-dimmer: rgba(0,229,255,0.06);
+  --warn: #ff6b35;
+  --warn-dim: rgba(255,107,53,0.15);
+  --green: #39ff7a;
+  --green-dim: rgba(57,255,122,0.15);
+  --yellow: #ffd60a;
+  --yellow-dim: rgba(255,214,10,0.12);
+  --red: #ff3355;
+  --red-dim: rgba(255,51,85,0.15);
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Barlow Condensed', sans-serif;
+  --body: 'Barlow', sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  overscroll-behavior: none;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── LAYOUT ─────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  position: relative;
+  z-index: 1;
+}
+
+.screen { display: none; flex-direction: column; flex: 1; }
+.screen.active { display: flex; }
+
+/* ─── TOPBAR ─────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.topbar-title {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.topbar-title sup { font-size: 11px; color: var(--accent); }
+
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+.icon-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.icon-btn:hover, .icon-btn.active { border-color: var(--accent); color: var(--accent); }
+
+.sync-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+  margin-right: 5px;
+}
+.sync-dot.error { background: var(--red); }
+.sync-dot.syncing { background: var(--yellow); animation: pulse 1s infinite; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ─── BOTTOM NAV ─────────────────────────────────────── */
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  bottom: 0;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
+  background: none;
+  border: none;
+  color: var(--text-dimmer);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.15s;
+  gap: 4px;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-btn:hover { color: var(--text-dim); }
+.nav-icon { font-size: 18px; line-height: 1; }
+
+/* ─── SCROLLABLE CONTENT ─────────────────────────────── */
+.scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ─── ATOMS ──────────────────────────────────────────── */
+.label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-dimmer);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.card-accent {
+  border-left: 3px solid var(--accent);
+}
+
+.btn {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 14px 20px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: transparent;
+  width: 100%;
+  -webkit-appearance: none;
+}
+
+.btn-primary {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.btn-primary:active { background: #33eeff; }
+
+.btn-secondary {
+  color: var(--text-dim);
+  border-color: var(--border);
+  background: var(--surface);
+}
+.btn-secondary:active { background: var(--surface2); }
+
+.btn-danger {
+  color: var(--red);
+  border-color: var(--red);
+  background: transparent;
+}
+.btn-danger:active { background: var(--red-dim); }
+
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-sm {
+  font-size: 12px;
+  padding: 8px 14px;
+  width: auto;
+}
+
+/* ─── PROTOCOL CARDS ─────────────────────────────────── */
+.protocol-grid { display: flex; flex-direction: column; gap: 8px; }
+
+.protocol-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.protocol-card.active {
+  border-color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--accent-dimmer);
+}
+.protocol-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.protocol-name {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.03em;
+}
+.protocol-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 7px;
+  border: 1px solid;
+  letter-spacing: 0.1em;
+}
+.badge-foundation { color: var(--green); border-color: var(--green); }
+.badge-standard   { color: var(--accent); border-color: var(--accent); }
+.badge-advanced   { color: var(--warn); border-color: var(--warn); }
+.badge-elite      { color: var(--red); border-color: var(--red); }
+
+.protocol-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ─── ZONE TABLE ─────────────────────────────────────── */
+.zone-table { width: 100%; border-collapse: collapse; }
+.zone-table td { padding: 8px 10px; font-family: var(--mono); font-size: 11px; border-bottom: 1px solid var(--border); }
+.zone-table tr:last-child td { border-bottom: none; }
+.zone-row-active { background: rgba(255,255,255,0.04); }
+
+/* ─── SPEED CONTROLS ─────────────────────────────────── */
+.speed-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.speed-row:last-child { border-bottom: none; }
+.speed-label { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.speed-ctrl { display: flex; align-items: center; gap: 10px; }
+.speed-val {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  min-width: 60px;
+  text-align: center;
+  line-height: 1;
+}
+.speed-unit { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.adj { display: flex; flex-direction: column; gap: 4px; }
+.adj-btn {
+  width: 34px; height: 30px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s;
+  -webkit-appearance: none;
+}
+.adj-btn:active { border-color: var(--accent); color: var(--accent); }
+
+/* ─── TIMER SCREEN ───────────────────────────────────── */
+.timer-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  min-height: 220px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.timer-phase-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  transition: color 0.3s;
+}
+
+.timer-value {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 88px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  transition: color 0.3s;
+}
+
+.timer-sublabel {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+/* Progress bar */
+.phase-progress-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+.phase-progress-fill {
+  height: 100%;
+  width: 0%;
+  transition: width 0.5s linear, background 0.3s;
+}
+
+/* Interval pips */
+.pips {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  justify-content: center;
+}
+.pip {
+  width: 32px; height: 4px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.pip.done { background: var(--accent); }
+.pip.active { background: var(--warn); animation: pulse 1s infinite; }
+
+/* Session map */
+.seg-bar {
+  display: flex;
+  height: 6px;
+  gap: 1px;
+  margin: 10px 16px;
+}
+.seg {
+  height: 100%;
+  border-radius: 1px;
+  transition: opacity 0.3s;
+  min-width: 2px;
+}
+.seg.done { opacity: 0.25; }
+.seg.current { animation: pulse 1s infinite; }
+
+/* Guidance bar */
+.guidance-bar {
+  margin: 0 16px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border-left: 3px solid var(--accent);
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 48px;
+  transition: border-color 0.3s;
+}
+
+/* Active zone indicator */
+.active-zone-bar {
+  display: flex;
+  gap: 1px;
+  margin: 10px 16px 0;
+}
+.zone-chip {
+  flex: 1;
+  padding: 8px 4px;
+  text-align: center;
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dimmer);
+  transition: all 0.3s;
+}
+.zone-chip.active {
+  color: var(--zone-color);
+  border-color: var(--zone-color);
+  background: rgba(var(--zone-rgb), 0.12);
+  font-weight: bold;
+}
+
+/* Timer controls */
+.timer-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px 16px;
+}
+.timer-controls .btn-primary { grid-column: 1 / -1; }
+
+/* In-interval speed adjust */
+.live-speed-bar {
+  margin: 0 16px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: none;
+}
+.live-speed-bar.visible { display: block; }
+.live-speed-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.live-speed-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; }
+.live-speed-val {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--warn);
+  min-width: 52px;
+  text-align: center;
+}
+.live-speed-adj { display: flex; gap: 6px; }
+.live-adj-btn {
+  width: 38px; height: 38px;
+  border: 1px solid var(--warn);
+  background: var(--warn-dim);
+  color: var(--warn);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-appearance: none;
+}
+.live-adj-btn:active { background: rgba(255,107,53,0.3); }
+
+/* ─── HISTORY SCREEN ─────────────────────────────────── */
+.history-empty {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dimmer);
+  padding: 40px 20px;
+}
+
+.session-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+}
+
+.session-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.session-date {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.session-protocol {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+}
+.session-status {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid;
+}
+.status-complete { color: var(--green); border-color: var(--green); }
+.status-partial  { color: var(--yellow); border-color: var(--yellow); }
+
+.interval-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.interval-chip {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.interval-chip-label { color: var(--text-dimmer); margin-bottom: 2px; }
+.interval-chip-val { color: var(--text); }
+
+/* Recommendation badge */
+.rec-card {
+  padding: 12px 14px;
+  border: 1px solid;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.rec-advance { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+.rec-stay    { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+.rec-regress { border-color: var(--yellow); background: var(--yellow-dim); color: var(--yellow); }
+.rec-label   { font-weight: bold; margin-bottom: 3px; letter-spacing: 0.1em; }
+
+/* ─── PROGRESSION SCREEN ─────────────────────────────── */
+.prog-ladder { display: flex; flex-direction: column; gap: 6px; }
+.prog-rung {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.prog-rung.current-rung {
+  border-color: var(--yellow);
+  background: var(--yellow-dim);
+}
+.prog-rung.done-rung {
+  opacity: 0.5;
+}
+.prog-rung-num {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 22px;
+  min-width: 24px;
+  color: var(--text-dim);
+}
+.prog-rung-info { flex: 1; }
+.prog-rung-name { font-family: var(--display); font-weight: 700; font-size: 15px; }
+.prog-rung-desc { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.prog-rung-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 6px;
+  border: 1px solid var(--yellow);
+  color: var(--yellow);
+}
+.prog-rung-check { color: var(--green); font-size: 16px; }
+
+.prog-rule-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--yellow);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+.prog-rule-card strong { color: var(--text); }
+
+/* ─── SETTINGS SCREEN ────────────────────────────────── */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.settings-label { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.settings-val { font-family: var(--display); font-weight: 700; font-size: 16px; }
+
+.token-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 10px 12px;
+  outline: none;
+  -webkit-appearance: none;
+}
+.token-input:focus { border-color: var(--accent); }
+
+.github-status {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+/* ─── SETUP MODAL ────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,12,0.95);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border-active);
+  padding: 24px;
+  max-width: 440px;
+  width: 100%;
+}
+.modal-title {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+.modal-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.modal-field { margin-bottom: 14px; }
+.modal-field label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.modal-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 10px 12px;
+  outline: none;
+  -webkit-appearance: none;
+}
+.modal-input:focus { border-color: var(--accent); }
+.modal-error {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--red);
+  margin-top: 8px;
+  min-height: 18px;
+}
+
+/* ─── COMPLETION OVERLAY ─────────────────────────────── */
+.complete-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,12,0.96);
+  z-index: 150;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 16px;
+}
+.complete-overlay.show { display: flex; }
+.complete-title {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 52px;
+  color: var(--green);
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+.complete-stats {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.complete-stat { text-align: center; }
+.complete-stat-val {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1;
+}
+.complete-stat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+.complete-rec {
+  max-width: 400px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.7;
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+.complete-rec strong { color: var(--text); display: block; margin-bottom: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: TRAIN                                       -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="screen active" id="screen-train">
+
+    <div class="topbar">
+      <div class="topbar-title">VO₂<sup>MAX</sup></div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="syncBtn" onclick="syncNow()">
+          <span class="sync-dot" id="syncDot"></span><span id="syncLabel">SYNC</span>
+        </button>
+        <button class="icon-btn" id="audioBtn" onclick="toggleAudio()">◎ SND</button>
+      </div>
+    </div>
+
+    <!-- Idle: protocol + speed setup -->
+    <div id="setupPanel" class="scroll-content">
+
+      <div class="label" style="margin-top:4px">Select Protocol</div>
+      <div class="protocol-grid" id="protocolGrid"></div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="label">Speed Settings</div>
+        <div id="speedRows"></div>
+      </div>
+
+      <div class="card" style="margin-top:0">
+        <div class="label">HR Zones — Age <span id="ageDisplay"></span> / Max HR <span id="maxHRDisplay"></span></div>
+        <table class="zone-table" id="zoneTable"></table>
+      </div>
+
+      <div style="margin-top:12px">
+        <button class="btn btn-primary" id="startBtn" onclick="startSession()" disabled>START SESSION</button>
+      </div>
+      <div style="height:20px"></div>
+
+    </div>
+
+    <!-- Active timer panel -->
+    <div id="timerPanel" style="display:none; flex-direction:column; flex:1">
+
+      <!-- Hero timer -->
+      <div class="timer-hero">
+        <div class="timer-phase-label" id="timerPhaseLabel">—</div>
+        <div class="timer-value" id="timerValue">--:--</div>
+        <div class="timer-sublabel" id="timerSublabel">—</div>
+        <div class="pips" id="timerPips"></div>
+        <div class="phase-progress-bar">
+          <div class="phase-progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- Session map -->
+      <div class="seg-bar" id="segBar"></div>
+
+      <!-- Guidance -->
+      <div class="guidance-bar" id="guidanceBar">—</div>
+
+      <!-- Live speed adjust (only visible during work intervals) -->
+      <div class="live-speed-bar" id="liveSpeedBar">
+        <div class="live-speed-label">CURRENT INTERVAL SPEED — TAP TO ADJUST</div>
+        <div class="live-speed-inner" style="margin-top:6px">
+          <div>
+            <div class="live-speed-val" id="liveSpeedVal">—</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">mph</div>
+          </div>
+          <div class="live-speed-adj">
+            <button class="live-adj-btn" onclick="liveAdjSpeed(-0.1)">−</button>
+            <button class="live-adj-btn" onclick="liveAdjSpeed(0.1)">+</button>
+          </div>
+        </div>
+        <div id="liveSpeedDropNote" style="font-family:var(--mono);font-size:10px;color:var(--yellow);margin-top:6px;display:none"></div>
+      </div>
+
+      <!-- Zone chips -->
+      <div class="active-zone-bar" id="zoneChips"></div>
+
+      <!-- Controls -->
+      <div class="timer-controls">
+        <button class="btn btn-primary" id="pauseBtn" onclick="togglePause()">PAUSE</button>
+        <button class="btn btn-secondary btn-sm" onclick="skipPhase()" id="skipBtn">SKIP PHASE ▶</button>
+        <button class="btn btn-danger btn-sm" onclick="abandonSession()">ABANDON</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: HISTORY                                     -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-history">
+    <div class="topbar">
+      <div class="topbar-title">SESSION LOG</div>
+    </div>
+    <div class="scroll-content" id="historyContent">
+      <div class="history-empty">No sessions yet.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: PROGRESSION                                 -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-progression">
+    <div class="topbar">
+      <div class="topbar-title">PROGRESSION</div>
+    </div>
+    <div class="scroll-content">
+
+      <div class="prog-rule-card">
+        <strong>Advancement Rules</strong><br>
+        Complete <strong>all intervals at target speed</strong> for <strong>2 consecutive sessions</strong> → advance protocol.<br>
+        Increase interval speed by <strong>0.1–0.2 mph</strong> when completing all intervals cleanly before moving up.<br>
+        If you drop speed mid-interval on ≥ 2 intervals in a session → stay, do not increase speed next session.
+      </div>
+
+      <div class="label">Protocol Ladder</div>
+      <div class="prog-ladder" id="progLadder"></div>
+
+      <div style="margin-top:14px" class="label">Next Session Recommendation</div>
+      <div id="nextRec" class="card">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-dimmer)">Complete a session to generate recommendation.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: SETTINGS                                    -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-settings">
+    <div class="topbar">
+      <div class="topbar-title">SETTINGS</div>
+    </div>
+    <div class="scroll-content">
+
+      <div class="label">GitHub Storage</div>
+      <div class="card">
+        <div style="margin-bottom:10px">
+          <div class="label" style="margin-bottom:6px">Personal Access Token</div>
+          <input type="password" class="token-input" id="tokenInput" placeholder="ghp_xxxxxxxxxxxx" oninput="onTokenChange()">
+        </div>
+        <div style="margin-bottom:10px">
+          <div class="label" style="margin-bottom:6px">Repo (owner/repo)</div>
+          <input type="text" class="token-input" id="repoInput" placeholder="yourusername/vo2max-data" oninput="onRepoChange()">
+        </div>
+        <div style="margin-bottom:10px">
+          <div class="label" style="margin-bottom:6px">Data File Path</div>
+          <input type="text" class="token-input" id="filePathInput" placeholder="data/sessions.json" oninput="onFilePathChange()">
+        </div>
+        <button class="btn btn-secondary btn-sm" style="width:auto;margin-bottom:8px" onclick="testGitHubConnection()">TEST CONNECTION</button>
+        <div class="github-status" id="githubStatus">Not configured.</div>
+      </div>
+
+      <div class="label" style="margin-top:12px">Data</div>
+      <div class="card" style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-secondary" onclick="syncNow()">SYNC NOW</button>
+        <button class="btn btn-danger" onclick="clearLocalData()">CLEAR LOCAL DATA</button>
+      </div>
+
+      <div class="label" style="margin-top:12px">About</div>
+      <div class="card">
+        <div class="settings-row" style="background:transparent;padding:0;border:none;margin-bottom:8px">
+          <span class="settings-label">AGE</span>
+          <span class="settings-val" id="settingsAge"></span>
+        </div>
+        <div class="settings-row" style="background:transparent;padding:0;border:none;margin-bottom:8px">
+          <span class="settings-label">MAX HR</span>
+          <span class="settings-val" id="settingsMaxHR"></span>
+        </div>
+        <div class="settings-row" style="background:transparent;padding:0;border:none">
+          <span class="settings-label">VERSION</span>
+          <span class="settings-val" style="font-size:13px;color:var(--text-dim)">1.0.0</span>
+        </div>
+      </div>
+
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- ─── BOTTOM NAV ──────────────────────────────────── -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-train" onclick="switchScreen('train')">
+      <span class="nav-icon">⏱</span>TRAIN
+    </button>
+    <button class="nav-btn" id="nav-history" onclick="switchScreen('history')">
+      <span class="nav-icon">📋</span>LOG
+    </button>
+    <button class="nav-btn" id="nav-progression" onclick="switchScreen('progression')">
+      <span class="nav-icon">📈</span>PROGRESS
+    </button>
+    <button class="nav-btn" id="nav-settings" onclick="switchScreen('settings')">
+      <span class="nav-icon">⚙</span>SETTINGS
+    </button>
+  </nav>
+
+</div>
+
+<!-- ─── COMPLETION OVERLAY ──────────────────────────── -->
+<div class="complete-overlay" id="completeOverlay">
+  <div class="complete-title">SESSION<br>COMPLETE</div>
+  <div class="complete-stats" id="completeStats"></div>
+  <div class="complete-rec" id="completeRec"></div>
+  <button class="btn btn-primary" style="max-width:280px;margin-top:8px" onclick="dismissCompletion()">SAVE & CLOSE</button>
+</div>
+
+<!-- ─── GITHUB SETUP MODAL ──────────────────────────── -->
+<div class="modal-overlay" id="setupModal">
+  <div class="modal">
+    <div class="modal-title">GITHUB SETUP</div>
+    <div class="modal-sub">
+      Session data will be stored as JSON in a GitHub repo.<br>
+      Required: a Personal Access Token with <strong>repo</strong> scope.<br>
+      Token is stored only in this browser's localStorage.
+    </div>
+    <div class="modal-field">
+      <label>Personal Access Token</label>
+      <input class="modal-input" id="modalToken" type="password" placeholder="ghp_xxxxxxxxxxxx">
+    </div>
+    <div class="modal-field">
+      <label>Repo (owner/repo)</label>
+      <input class="modal-input" id="modalRepo" placeholder="yourusername/vo2max-data">
+    </div>
+    <div class="modal-field">
+      <label>Data File Path</label>
+      <input class="modal-input" id="modalFilePath" value="data/sessions.json">
+    </div>
+    <div class="modal-error" id="modalError"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-primary" onclick="saveGitHubConfig()">SAVE & CONNECT</button>
+      <button class="btn btn-secondary btn-sm" style="width:auto" onclick="skipSetup()">SKIP FOR NOW</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// CONSTANTS & CONFIG
+// ═══════════════════════════════════════════════════════════════════════
+
+const BIRTH_DATE = new Date('1978-11-14');
+
+function computeAge() {
+  const today = new Date();
+  let age = today.getFullYear() - BIRTH_DATE.getFullYear();
+  const m = today.getMonth() - BIRTH_DATE.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < BIRTH_DATE.getDate())) age--;
+  return age;
+}
+
+function getMaxHR() { return 220 - computeAge(); }
+
+function getZones() {
+  const max = getMaxHR();
+  return [
+    { id:'z12', name:'ZONE 1–2', detail:'Warmup / Recovery',  lo: Math.round(max*0.50), hi: Math.round(max*0.65), color:'#6bbfff', rgb:'107,191,255', phases:['warmup','recovery','cooldown'] },
+    { id:'z3',  name:'ZONE 3',   detail:'Aerobic Base',       lo: Math.round(max*0.65), hi: Math.round(max*0.75), color:'#39ff7a', rgb:'57,255,122',  phases:[] },
+    { id:'z4',  name:'ZONE 4',   detail:'Threshold / Hard',   lo: Math.round(max*0.75), hi: Math.round(max*0.90), color:'#ffd60a', rgb:'255,214,10',  phases:['work'] },
+    { id:'z5',  name:'ZONE 5',   detail:'VO₂ Max / Maximal',  lo: Math.round(max*0.90), hi: Math.round(max*0.95), color:'#ff3355', rgb:'255,51,85',   phases:['work'] },
+  ];
+}
+
+const PROTOCOLS = [
+  {
+    id:'foundation', name:'FOUNDATION', badge:'foundation', badgeText:'ENTRY',
+    desc:'3 × 3 min work / 3 min recovery', warmupMin:10, intervals:3, workSec:180, recoverySec:180, cooldownMin:5,
+    guidance:{
+      warmup:   'Gradual build. 2 easy strides at 3:00. Legs loose, breathing open.',
+      work:     'Zone 4. HR 130–156. Speech reduced. Controlled hard effort — not a sprint.',
+      recovery: 'Drop to recovery speed. Active only. HR should fall toward Zone 2 trough.',
+      cooldown: 'Easy walk, HR below 110. Stretch hip flexors.'
+    }
+  },
+  {
+    id:'standard', name:'STANDARD', badge:'standard', badgeText:'TARGET',
+    desc:'4 × 4 min work / 3 min recovery', warmupMin:12, intervals:4, workSec:240, recoverySec:180, cooldownMin:5,
+    guidance:{
+      warmup:   '12 min build — non-negotiable. 2 progressive strides in final 3 min.',
+      work:     'High Zone 4 → Zone 5. HR 130–164 by min 2–4. 1–2 word speech only. Do NOT red-line interval 1.',
+      recovery: '3 min. If HR hasn\'t reached Zone 2–3 by 2:30, protocol is too intense — drop to Foundation.',
+      cooldown: '5 min easy walk. HR below 110.'
+    }
+  },
+  {
+    id:'compressed', name:'COMPRESSED', badge:'advanced', badgeText:'ADVANCED',
+    desc:'4 × 4 min work / 2.5 min recovery', warmupMin:12, intervals:4, workSec:240, recoverySec:150, cooldownMin:5,
+    guidance:{
+      warmup:   'Same 12 min build as Standard. Recovery compression makes session harder — do not shorten warmup.',
+      work:     'Same Zone 5 target. Same speed. The 30 sec shorter recovery is the overload lever.',
+      recovery: '2.5 min. HR may not fully recover — that accumulated deficit is the stimulus.',
+      cooldown: '5 min easy.'
+    }
+  },
+  {
+    id:'advanced', name:'ADVANCED', badge:'elite', badgeText:'ELITE',
+    desc:'5 × 4 min work / 2.5 min recovery', warmupMin:12, intervals:5, workSec:240, recoverySec:150, cooldownMin:5,
+    guidance:{
+      warmup:   '12 min build. Fifth interval will be hardest — conserve on intervals 1–2.',
+      work:     'Zone 5 across all 5. Pacing is critical. Gap between interval 1 and 5 is your readiness signal.',
+      recovery: '2.5 min. Incomplete recovery at interval 4–5 is expected and is the stimulus.',
+      cooldown: 'Extended if needed. Log performance gap interval 1 vs 5.'
+    }
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════
+
+let cfg = {
+  easySpeed:   parseFloat(localStorage.getItem('vo2_easySpeed') || '3.0'),
+  hardSpeed:   parseFloat(localStorage.getItem('vo2_hardSpeed') || '6.5'),
+  selectedProtocolId: localStorage.getItem('vo2_selectedProtocol') || 'standard',
+  audioEnabled: true,
+  ghToken:     localStorage.getItem('vo2_ghToken') || '',
+  ghRepo:      localStorage.getItem('vo2_ghRepo') || '',
+  ghFilePath:  localStorage.getItem('vo2_ghFilePath') || 'data/sessions.json',
+};
+
+let sessions = []; // loaded from GitHub / localStorage cache
+
+let timer = {
+  running: false,
+  paused: false,
+  phaseQueue: [],
+  currentPhaseIdx: 0,
+  secondsRemaining: 0,
+  totalElapsed: 0,
+  interval: null,
+  currentIntervalIdx: 0,
+  // Per-interval speed tracking
+  intervalLogs: [], // [{intervalIdx, targetSpeed, startSpeed, drops:[{sec, fromSpeed, toSpeed}], finalSpeed}]
+  currentIntervalLog: null,
+  liveSpeed: 0,
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════════════════════════════
+
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep(freq, dur, vol) {
+  if (!cfg.audioEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(vol||0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  } catch(e){}
+}
+function beepStart() { beep(880,0.15,0.4); setTimeout(()=>beep(1100,0.2,0.4),180); }
+function beepEnd()   { beep(660,0.15,0.3); setTimeout(()=>beep(440,0.3,0.3),180); }
+function beepWarn()  { [0,200,400].forEach(d=>setTimeout(()=>beep(1320,0.08,0.3),d)); }
+
+function toggleAudio() {
+  cfg.audioEnabled = !cfg.audioEnabled;
+  document.getElementById('audioBtn').textContent = cfg.audioEnabled ? '◎ SND' : '◌ SND';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════════
+
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+  document.getElementById(`nav-${name}`).classList.add('active');
+
+  if (name === 'history') renderHistory();
+  if (name === 'progression') renderProgression();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SETUP PANEL RENDERING
+// ═══════════════════════════════════════════════════════════════════════
+
+function renderSetupPanel() {
+  const age = computeAge();
+  const maxHR = getMaxHR();
+  document.getElementById('ageDisplay').textContent = age;
+  document.getElementById('maxHRDisplay').textContent = maxHR;
+  document.getElementById('settingsAge').textContent = age;
+  document.getElementById('settingsMaxHR').textContent = maxHR;
+
+  // Protocol cards
+  document.getElementById('protocolGrid').innerHTML = PROTOCOLS.map(p => `
+    <div class="protocol-card ${p.id === cfg.selectedProtocolId ? 'active' : ''}" onclick="selectProtocol('${p.id}')">
+      <div class="protocol-card-header">
+        <div class="protocol-name">${p.name}</div>
+        <div class="protocol-badge badge-${p.badge}">${p.badgeText}</div>
+      </div>
+      <div class="protocol-meta">${p.desc} · ${p.warmupMin}min warmup · ${p.cooldownMin}min cooldown</div>
+    </div>
+  `).join('');
+
+  // Speed rows
+  document.getElementById('speedRows').innerHTML = `
+    <div class="speed-row">
+      <div>
+        <div class="speed-label">WARMUP / RECOVERY</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dimmer)">Zone 1–2 effort</div>
+      </div>
+      <div class="speed-ctrl">
+        <div class="adj"><button class="adj-btn" onclick="adjustSpeed('easy',0.1)">+</button><button class="adj-btn" onclick="adjustSpeed('easy',-0.1)">−</button></div>
+        <div><span class="speed-val" id="easySpeedVal">${cfg.easySpeed.toFixed(1)}</span><span class="speed-unit"> mph</span></div>
+      </div>
+    </div>
+    <div class="speed-row">
+      <div>
+        <div class="speed-label">INTERVAL TARGET</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dimmer)">Zone 4–5 effort</div>
+      </div>
+      <div class="speed-ctrl">
+        <div class="adj"><button class="adj-btn" onclick="adjustSpeed('hard',0.1)">+</button><button class="adj-btn" onclick="adjustSpeed('hard',-0.1)">−</button></div>
+        <div><span class="speed-val" id="hardSpeedVal">${cfg.hardSpeed.toFixed(1)}</span><span class="speed-unit"> mph</span></div>
+      </div>
+    </div>
+  `;
+
+  // Zone table
+  const zones = getZones();
+  document.getElementById('zoneTable').innerHTML = zones.map(z => `
+    <tr>
+      <td style="width:8px;padding-right:0"><div style="width:8px;height:8px;border-radius:50%;background:${z.color}"></div></td>
+      <td><span style="color:${z.color};font-weight:bold">${z.name}</span></td>
+      <td style="color:var(--text-dim)">${z.detail}</td>
+      <td style="color:${z.color};text-align:right">${z.lo}–${z.hi} bpm</td>
+    </tr>
+  `).join('');
+
+  // Zone chips for timer
+  document.getElementById('zoneChips').innerHTML = zones.map(z => `
+    <div class="zone-chip" id="chip-${z.id}" style="--zone-color:${z.color};--zone-rgb:${z.rgb}">
+      <div style="font-size:9px;letter-spacing:0.05em">${z.name.replace('ZONE ','Z')}</div>
+      <div style="font-size:9px;margin-top:2px">${z.lo}–${z.hi}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('startBtn').disabled = !cfg.selectedProtocolId;
+}
+
+function selectProtocol(id) {
+  if (timer.running) return;
+  cfg.selectedProtocolId = id;
+  localStorage.setItem('vo2_selectedProtocol', id);
+  renderSetupPanel();
+}
+
+function adjustSpeed(type, delta) {
+  if (type === 'easy') {
+    cfg.easySpeed = Math.round((cfg.easySpeed + delta) * 10) / 10;
+    cfg.easySpeed = Math.max(1.0, Math.min(5.0, cfg.easySpeed));
+    localStorage.setItem('vo2_easySpeed', cfg.easySpeed);
+    const el = document.getElementById('easySpeedVal');
+    if (el) el.textContent = cfg.easySpeed.toFixed(1);
+  } else {
+    cfg.hardSpeed = Math.round((cfg.hardSpeed + delta) * 10) / 10;
+    cfg.hardSpeed = Math.max(4.0, Math.min(15.0, cfg.hardSpeed));
+    localStorage.setItem('vo2_hardSpeed', cfg.hardSpeed);
+    const el = document.getElementById('hardSpeedVal');
+    if (el) el.textContent = cfg.hardSpeed.toFixed(1);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TIMER ENGINE
+// ═══════════════════════════════════════════════════════════════════════
+
+function buildPhaseQueue(protocol) {
+  const q = [];
+  q.push({ type:'warmup',   label:`WARMUP`, sec: protocol.warmupMin * 60 });
+  for (let i = 0; i < protocol.intervals; i++) {
+    q.push({ type:'work',     label:`INTERVAL ${i+1} / ${protocol.intervals}`, sec: protocol.workSec,     intervalIdx: i });
+    q.push({ type:'recovery', label:`RECOVERY`,                                  sec: protocol.recoverySec, intervalIdx: i });
+  }
+  q.push({ type:'cooldown', label:`COOLDOWN`, sec: protocol.cooldownMin * 60 });
+  return q;
+}
+
+function startSession() {
+  const protocol = PROTOCOLS.find(p => p.id === cfg.selectedProtocolId);
+  if (!protocol) return;
+  beepStart();
+
+  timer.phaseQueue = buildPhaseQueue(protocol);
+  timer.currentPhaseIdx = 0;
+  timer.totalElapsed = 0;
+  timer.currentIntervalIdx = 0;
+  timer.intervalLogs = [];
+  timer.currentIntervalLog = null;
+  timer.running = true;
+  timer.paused = false;
+  timer.liveSpeed = cfg.hardSpeed;
+
+  // Show timer panel
+  document.getElementById('setupPanel').style.display = 'none';
+  document.getElementById('timerPanel').style.display = 'flex';
+
+  buildSegBar(protocol);
+  buildPips(protocol);
+  enterPhase(0);
+
+  timer.interval = setInterval(tick, 1000);
+}
+
+function enterPhase(idx) {
+  if (idx >= timer.phaseQueue.length) { endSession(); return; }
+
+  timer.currentPhaseIdx = idx;
+  const phase = timer.phaseQueue[idx];
+  timer.secondsRemaining = phase.sec;
+
+  if (phase.type === 'work') {
+    timer.currentIntervalIdx = phase.intervalIdx;
+    timer.liveSpeed = cfg.hardSpeed;
+    timer.currentIntervalLog = {
+      intervalIdx: phase.intervalIdx,
+      targetSpeed: cfg.hardSpeed,
+      startSpeed:  cfg.hardSpeed,
+      drops: [],
+      finalSpeed:  cfg.hardSpeed
+    };
+    beepStart();
+  } else if (phase.type === 'recovery') {
+    // Finalize interval log
+    if (timer.currentIntervalLog) {
+      timer.currentIntervalLog.finalSpeed = timer.liveSpeed;
+      timer.intervalLogs.push(timer.currentIntervalLog);
+      timer.currentIntervalLog = null;
+    }
+    beepEnd();
+  } else if (phase.type === 'warmup') {
+    timer.liveSpeed = cfg.easySpeed;
+  }
+
+  updateTimerDisplay();
+  updateZoneChips(phase.type);
+  updatePips();
+  updateSegBar();
+  updateGuidance(phase);
+  updateLiveSpeedBar(phase);
+}
+
+function tick() {
+  timer.secondsRemaining--;
+  timer.totalElapsed++;
+
+  if (timer.secondsRemaining <= 3 && timer.secondsRemaining > 0) beepWarn();
+  if (timer.secondsRemaining <= 0) {
+    enterPhase(timer.currentPhaseIdx + 1);
+  } else {
+    updateTimerDisplay();
+  }
+}
+
+function togglePause() {
+  if (!timer.running) return;
+  if (timer.paused) {
+    timer.interval = setInterval(tick, 1000);
+    timer.paused = false;
+    document.getElementById('pauseBtn').textContent = 'PAUSE';
+  } else {
+    clearInterval(timer.interval);
+    timer.interval = null;
+    timer.paused = true;
+    document.getElementById('pauseBtn').textContent = 'RESUME';
+  }
+}
+
+function skipPhase() {
+  if (!timer.running) return;
+  enterPhase(timer.currentPhaseIdx + 1);
+}
+
+function abandonSession() {
+  if (!confirm('Abandon session? Data will not be saved.')) return;
+  clearInterval(timer.interval);
+  timer.running = false;
+  timer.paused = false;
+  document.getElementById('setupPanel').style.display = '';
+  document.getElementById('timerPanel').style.display = 'none';
+}
+
+function endSession() {
+  clearInterval(timer.interval);
+  timer.interval = null;
+  timer.running = false;
+
+  // Finalize last interval if somehow still open
+  if (timer.currentIntervalLog) {
+    timer.currentIntervalLog.finalSpeed = timer.liveSpeed;
+    timer.intervalLogs.push(timer.currentIntervalLog);
+    timer.currentIntervalLog = null;
+  }
+
+  const protocol = PROTOCOLS.find(p => p.id === cfg.selectedProtocolId);
+  saveSession(protocol);
+
+  beepStart(); setTimeout(beepStart, 500);
+  showCompletion(protocol);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// LIVE SPEED ADJUST
+// ═══════════════════════════════════════════════════════════════════════
+
+function liveAdjSpeed(delta) {
+  const phase = timer.phaseQueue[timer.currentPhaseIdx];
+  if (!phase || phase.type !== 'work') return;
+
+  const prevSpeed = timer.liveSpeed;
+  timer.liveSpeed = Math.round((timer.liveSpeed + delta) * 10) / 10;
+  timer.liveSpeed = Math.max(1.0, Math.min(15.0, timer.liveSpeed));
+
+  if (timer.liveSpeed < prevSpeed && timer.currentIntervalLog) {
+    // Log the drop
+    const secIntoInterval = timer.phaseQueue[timer.currentPhaseIdx].sec - timer.secondsRemaining;
+    timer.currentIntervalLog.drops.push({
+      sec: secIntoInterval,
+      fromSpeed: prevSpeed,
+      toSpeed: timer.liveSpeed
+    });
+  }
+
+  if (timer.currentIntervalLog) timer.currentIntervalLog.finalSpeed = timer.liveSpeed;
+
+  document.getElementById('liveSpeedVal').textContent = timer.liveSpeed.toFixed(1);
+  updateLiveDropNote();
+}
+
+function updateLiveDropNote() {
+  const note = document.getElementById('liveSpeedDropNote');
+  if (!timer.currentIntervalLog) { note.style.display='none'; return; }
+  const drops = timer.currentIntervalLog.drops;
+  if (!drops.length) { note.style.display='none'; return; }
+  const firstDrop = drops[0];
+  const secInto = firstDrop.sec;
+  const m = Math.floor(secInto/60), s = secInto%60;
+  note.style.display = 'block';
+  note.textContent = `DROP LOGGED — ${firstDrop.fromSpeed.toFixed(1)} → ${timer.liveSpeed.toFixed(1)} mph at ${m}:${String(s).padStart(2,'0')}`;
+}
+
+function updateLiveSpeedBar(phase) {
+  const bar = document.getElementById('liveSpeedBar');
+  if (phase.type === 'work') {
+    bar.classList.add('visible');
+    document.getElementById('liveSpeedVal').textContent = timer.liveSpeed.toFixed(1);
+    document.getElementById('liveSpeedDropNote').style.display = 'none';
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TIMER DISPLAY
+// ═══════════════════════════════════════════════════════════════════════
+
+function fmt(sec) {
+  return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+}
+
+const PHASE_COLORS = { warmup:'#6bbfff', work:'#ff3355', recovery:'#39ff7a', cooldown:'#6bbfff' };
+
+function updateTimerDisplay() {
+  const phase = timer.phaseQueue[timer.currentPhaseIdx];
+  if (!phase) return;
+  const color = PHASE_COLORS[phase.type] || '#fff';
+  const progress = (1 - timer.secondsRemaining / phase.sec) * 100;
+  const speedHint = phase.type === 'work'
+    ? `${timer.liveSpeed.toFixed(1)} mph — PUSH`
+    : phase.type === 'recovery'
+    ? `${cfg.easySpeed.toFixed(1)} mph — recovery`
+    : `${cfg.easySpeed.toFixed(1)} mph`;
+
+  document.getElementById('timerPhaseLabel').textContent = phase.label;
+  document.getElementById('timerPhaseLabel').style.color = color;
+  document.getElementById('timerValue').textContent = fmt(timer.secondsRemaining);
+  document.getElementById('timerValue').style.color = color;
+  document.getElementById('timerSublabel').textContent = speedHint;
+  document.getElementById('progressFill').style.width = progress + '%';
+  document.getElementById('progressFill').style.background = color;
+}
+
+function buildPips(protocol) {
+  document.getElementById('timerPips').innerHTML =
+    Array.from({length: protocol.intervals}, (_,i) =>
+      `<div class="pip" id="pip-${i}"></div>`
+    ).join('');
+}
+
+function updatePips() {
+  const phase = timer.phaseQueue[timer.currentPhaseIdx];
+  const protocol = PROTOCOLS.find(p=>p.id===cfg.selectedProtocolId);
+  if (!protocol) return;
+  for (let i = 0; i < protocol.intervals; i++) {
+    const el = document.getElementById(`pip-${i}`);
+    if (!el) continue;
+    el.className = 'pip';
+    if (i < timer.currentIntervalIdx) el.classList.add('done');
+    else if (i === timer.currentIntervalIdx && phase?.type === 'work') el.classList.add('active');
+  }
+}
+
+function buildSegBar(protocol) {
+  const total = protocol.warmupMin*60 + protocol.intervals*(protocol.workSec+protocol.recoverySec) + protocol.cooldownMin*60;
+  const segs = [];
+  segs.push({type:'warmup', sec:protocol.warmupMin*60, color:'#6bbfff'});
+  for (let i=0;i<protocol.intervals;i++) {
+    segs.push({type:'work', sec:protocol.workSec, color:'#ff3355'});
+    segs.push({type:'recovery', sec:protocol.recoverySec, color:'#39ff7a'});
+  }
+  segs.push({type:'cooldown', sec:protocol.cooldownMin*60, color:'#6bbfff'});
+  document.getElementById('segBar').innerHTML = segs.map((s,i)=>
+    `<div class="seg" id="seg-${i}" style="flex:${s.sec/total};background:${s.color}"></div>`
+  ).join('');
+  document.getElementById('segBar')._segs = segs;
+}
+
+function updateSegBar() {
+  for (let i=0; i<20; i++) {
+    const el = document.getElementById(`seg-${i}`);
+    if (!el) break;
+    el.className = 'seg';
+    if (i < timer.currentPhaseIdx) el.classList.add('done');
+    else if (i === timer.currentPhaseIdx) el.classList.add('current');
+  }
+}
+
+function updateGuidance(phase) {
+  const protocol = PROTOCOLS.find(p=>p.id===cfg.selectedProtocolId);
+  const text = protocol?.guidance?.[phase.type] || '';
+  const bar = document.getElementById('guidanceBar');
+  bar.textContent = text;
+  bar.style.borderLeftColor = PHASE_COLORS[phase.type] || 'var(--accent)';
+}
+
+function updateZoneChips(phaseType) {
+  const zones = getZones();
+  zones.forEach(z => {
+    const el = document.getElementById(`chip-${z.id}`);
+    if (!el) return;
+    const active = z.phases.includes(phaseType);
+    el.classList.toggle('active', active);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RECOMMENDATION ENGINE
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Analyzes session interval logs and recent history to produce a recommendation.
+ * Returns { type: 'advance'|'stay'|'increase_speed'|'regress', message, detail }
+ */
+function computeRecommendation(protocol, intervalLogs, allSessions) {
+  if (!intervalLogs || !intervalLogs.length) return null;
+
+  const targetSpeed = cfg.hardSpeed;
+  const totalIntervals = protocol.intervals;
+
+  // Score each interval: did they drop speed?
+  let droppedCount = 0;
+  let allCompleted = true;
+  intervalLogs.forEach(log => {
+    if (log.drops.length > 0) droppedCount++;
+    if (log.finalSpeed < log.targetSpeed * 0.97) allCompleted = false; // Allow 3% rounding
+  });
+
+  // Find last 2 sessions with same protocol
+  const sameProt = (allSessions || []).filter(s => s.protocolId === protocol.id && s.intervalLogs);
+  const lastTwo = sameProt.slice(0, 2);
+
+  const thisSessionClean = droppedCount === 0;
+  const prevSessionClean = lastTwo.length >= 1 && lastTwo[0].intervalLogs && lastTwo[0].intervalLogs.every(l => !l.drops.length);
+  const twoClean = thisSessionClean && prevSessionClean;
+
+  const nextProtocol = PROTOCOLS[PROTOCOLS.findIndex(p=>p.id===protocol.id)+1];
+
+  if (droppedCount >= 2) {
+    return {
+      type: 'regress',
+      headline: 'HOLD SPEED — DO NOT INCREASE',
+      message: `Dropped speed in ${droppedCount} of ${totalIntervals} intervals. Stay at ${targetSpeed.toFixed(1)} mph next session. Focus on completing all intervals without drops.`
+    };
+  }
+
+  if (droppedCount === 1) {
+    return {
+      type: 'stay',
+      headline: 'STAY AT CURRENT SPEED',
+      message: `1 drop logged. Repeat ${targetSpeed.toFixed(1)} mph. Advance speed only when all intervals hold target for 2 consecutive sessions.`
+    };
+  }
+
+  if (thisSessionClean && !prevSessionClean && nextProtocol) {
+    return {
+      type: 'stay',
+      headline: 'CLEAN SESSION — REPEAT ONCE MORE',
+      message: `All intervals held ${targetSpeed.toFixed(1)} mph. One more clean session at this speed, then advance speed by 0.1–0.2 mph OR move to ${nextProtocol.name}.`
+    };
+  }
+
+  if (twoClean) {
+    if (nextProtocol) {
+      return {
+        type: 'advance',
+        headline: `READY TO ADVANCE → ${nextProtocol.name}`,
+        message: `2 consecutive clean sessions at ${targetSpeed.toFixed(1)} mph. Option A: increase speed to ${(targetSpeed+0.1).toFixed(1)}–${(targetSpeed+0.2).toFixed(1)} mph and stay on ${protocol.name}. Option B: move to ${nextProtocol.name} at current speed.`
+      };
+    } else {
+      return {
+        type: 'advance',
+        headline: 'INCREASE INTERVAL SPEED',
+        message: `2 consecutive clean sessions at ${targetSpeed.toFixed(1)} mph. Increase to ${(targetSpeed+0.1).toFixed(1)}–${(targetSpeed+0.2).toFixed(1)} mph next session. You are on the top protocol.`
+      };
+    }
+  }
+
+  return {
+    type: 'stay',
+    headline: 'SOLID SESSION — CONTINUE',
+    message: `All intervals completed at ${targetSpeed.toFixed(1)} mph. One more clean session needed before advancing. Keep speed the same.`
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// COMPLETION
+// ═══════════════════════════════════════════════════════════════════════
+
+function showCompletion(protocol) {
+  const rec = computeRecommendation(protocol, timer.intervalLogs, sessions);
+  const recColors = { advance:'var(--green)', stay:'var(--accent)', increase_speed:'var(--accent)', regress:'var(--yellow)' };
+
+  document.getElementById('completeStats').innerHTML = `
+    <div class="complete-stat">
+      <div class="complete-stat-val">${fmt(timer.totalElapsed)}</div>
+      <div class="complete-stat-label">TOTAL TIME</div>
+    </div>
+    <div class="complete-stat">
+      <div class="complete-stat-val">${timer.intervalLogs.length}/${protocol.intervals}</div>
+      <div class="complete-stat-label">INTERVALS</div>
+    </div>
+    <div class="complete-stat">
+      <div class="complete-stat-val">${cfg.hardSpeed.toFixed(1)}</div>
+      <div class="complete-stat-label">TARGET MPH</div>
+    </div>
+  `;
+
+  if (rec) {
+    document.getElementById('completeRec').innerHTML = `
+      <strong style="color:${recColors[rec.type]||'var(--text)'}">${rec.headline}</strong>
+      ${rec.message}
+    `;
+    document.getElementById('completeRec').style.borderColor = recColors[rec.type] || 'var(--border)';
+  }
+
+  document.getElementById('completeOverlay').classList.add('show');
+}
+
+function dismissCompletion() {
+  document.getElementById('completeOverlay').classList.remove('show');
+  document.getElementById('setupPanel').style.display = '';
+  document.getElementById('timerPanel').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SESSION STORAGE
+// ═══════════════════════════════════════════════════════════════════════
+
+function saveSession(protocol) {
+  const session = {
+    id: Date.now().toString(),
+    date: new Date().toISOString(),
+    protocolId: protocol.id,
+    protocolName: protocol.name,
+    targetSpeed: cfg.hardSpeed,
+    easySpeed: cfg.easySpeed,
+    totalSeconds: timer.totalElapsed,
+    intervalLogs: JSON.parse(JSON.stringify(timer.intervalLogs)),
+  };
+
+  // Compute recommendation and store it
+  session.recommendation = computeRecommendation(protocol, session.intervalLogs, sessions);
+
+  sessions.unshift(session);
+  if (sessions.length > 100) sessions.pop();
+
+  // Save to localStorage as cache
+  localStorage.setItem('vo2_sessions_cache', JSON.stringify(sessions));
+
+  // Push to GitHub asynchronously
+  pushToGitHub();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GITHUB SYNC
+// ═══════════════════════════════════════════════════════════════════════
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  dot.className = 'sync-dot' + (state==='error' ? ' error' : state==='syncing' ? ' syncing' : '');
+  label.textContent = state === 'syncing' ? 'SYNCING' : state === 'error' ? 'ERR' : 'SYNC';
+}
+
+async function ghRequest(method, path, body) {
+  const token = cfg.ghToken;
+  const repo  = cfg.ghRepo;
+  if (!token || !repo) throw new Error('GitHub not configured');
+
+  const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+  const headers = {
+    'Authorization': `token ${token}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+  };
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.message || `GitHub ${res.status}`);
+  }
+  return res.json();
+}
+
+async function pushToGitHub() {
+  if (!cfg.ghToken || !cfg.ghRepo) return;
+  setSyncStatus('syncing');
+  try {
+    const filePath = cfg.ghFilePath;
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(sessions, null, 2))));
+
+    // Try to get existing file SHA
+    let sha;
+    try {
+      const existing = await ghRequest('GET', filePath);
+      sha = existing.sha;
+    } catch(e) { /* file doesn't exist yet */ }
+
+    await ghRequest('PUT', filePath, {
+      message: `Session log update ${new Date().toISOString()}`,
+      content,
+      ...(sha ? { sha } : {})
+    });
+
+    setSyncStatus('ok');
+    localStorage.setItem('vo2_sessions_cache', JSON.stringify(sessions));
+  } catch(e) {
+    setSyncStatus('error');
+    console.error('GitHub push failed:', e);
+  }
+}
+
+async function pullFromGitHub() {
+  if (!cfg.ghToken || !cfg.ghRepo) return;
+  setSyncStatus('syncing');
+  try {
+    const filePath = cfg.ghFilePath;
+    const data = await ghRequest('GET', filePath);
+    const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g,''))));
+    sessions = JSON.parse(text);
+    localStorage.setItem('vo2_sessions_cache', JSON.stringify(sessions));
+    setSyncStatus('ok');
+    renderHistory();
+    renderProgression();
+  } catch(e) {
+    setSyncStatus('error');
+    // Fall back to cache
+    const cached = localStorage.getItem('vo2_sessions_cache');
+    if (cached) sessions = JSON.parse(cached);
+  }
+}
+
+async function syncNow() {
+  await pullFromGitHub();
+}
+
+async function testGitHubConnection() {
+  const token = document.getElementById('tokenInput').value.trim();
+  const repo  = document.getElementById('repoInput').value.trim();
+  const path  = document.getElementById('filePathInput').value.trim();
+  const status = document.getElementById('githubStatus');
+  status.textContent = 'Testing...';
+  status.style.color = 'var(--text-dim)';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (res.ok) {
+      const d = await res.json();
+      status.textContent = `✓ Connected: ${d.full_name}`;
+      status.style.color = 'var(--green)';
+    } else {
+      const e = await res.json();
+      status.textContent = `✗ ${e.message}`;
+      status.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    status.textContent = `✗ Network error`;
+    status.style.color = 'var(--red)';
+  }
+}
+
+function onTokenChange() {
+  cfg.ghToken = document.getElementById('tokenInput').value.trim();
+  localStorage.setItem('vo2_ghToken', cfg.ghToken);
+}
+function onRepoChange() {
+  cfg.ghRepo = document.getElementById('repoInput').value.trim();
+  localStorage.setItem('vo2_ghRepo', cfg.ghRepo);
+}
+function onFilePathChange() {
+  cfg.ghFilePath = document.getElementById('filePathInput').value.trim();
+  localStorage.setItem('vo2_ghFilePath', cfg.ghFilePath);
+}
+
+// ─── Setup modal ─────────────────────────────────────────
+function saveGitHubConfig() {
+  const token = document.getElementById('modalToken').value.trim();
+  const repo  = document.getElementById('modalRepo').value.trim();
+  const path  = document.getElementById('modalFilePath').value.trim();
+  if (!token || !repo) {
+    document.getElementById('modalError').textContent = 'Token and repo are required.';
+    return;
+  }
+  cfg.ghToken = token; cfg.ghRepo = repo; cfg.ghFilePath = path || 'data/sessions.json';
+  localStorage.setItem('vo2_ghToken', cfg.ghToken);
+  localStorage.setItem('vo2_ghRepo', cfg.ghRepo);
+  localStorage.setItem('vo2_ghFilePath', cfg.ghFilePath);
+  localStorage.setItem('vo2_setupDone', '1');
+  document.getElementById('setupModal').classList.remove('show');
+  // Populate settings fields
+  document.getElementById('tokenInput').value = cfg.ghToken;
+  document.getElementById('repoInput').value = cfg.ghRepo;
+  document.getElementById('filePathInput').value = cfg.ghFilePath;
+  pullFromGitHub();
+}
+
+function skipSetup() {
+  localStorage.setItem('vo2_setupDone', '1');
+  document.getElementById('setupModal').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// HISTORY SCREEN
+// ═══════════════════════════════════════════════════════════════════════
+
+function renderHistory() {
+  const el = document.getElementById('historyContent');
+  if (!sessions.length) {
+    el.innerHTML = '<div class="history-empty">No sessions logged yet.</div>';
+    return;
+  }
+
+  el.innerHTML = sessions.map(s => {
+    const date = new Date(s.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const time = new Date(s.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    const hasDrops = s.intervalLogs && s.intervalLogs.some(l => l.drops.length > 0);
+    const allClean = s.intervalLogs && !hasDrops;
+    const rec = s.recommendation;
+    const recColorMap = { advance:'var(--green)', stay:'var(--accent)', regress:'var(--yellow)' };
+
+    const intervalDetails = (s.intervalLogs || []).map((l, i) => {
+      const dropped = l.drops.length > 0;
+      const firstDrop = l.drops[0];
+      return `
+        <div class="interval-chip">
+          <div class="interval-chip-label">INT ${i+1}</div>
+          <div class="interval-chip-val">
+            ${dropped
+              ? `${l.startSpeed.toFixed(1)}→${l.finalSpeed.toFixed(1)} mph<br><span style="color:var(--yellow)">↓ at ${Math.floor(firstDrop.sec/60)}:${String(firstDrop.sec%60).padStart(2,'0')}</span>`
+              : `${l.finalSpeed.toFixed(1)} mph ✓`
+            }
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="session-card">
+        <div class="session-card-header">
+          <div>
+            <div class="session-date">${date} · ${time}</div>
+            <div class="session-protocol">${s.protocolName || s.protocolId}</div>
+          </div>
+          <div class="session-status ${allClean ? 'status-complete' : 'status-partial'}">
+            ${allClean ? '● CLEAN' : '◐ DROPS'}
+          </div>
+        </div>
+        ${intervalDetails ? `<div class="interval-detail-grid">${intervalDetails}</div>` : ''}
+        ${rec ? `
+          <div class="rec-card rec-${rec.type}" style="margin-top:10px">
+            <div class="rec-label">▶ NEXT SESSION: ${rec.headline}</div>
+            ${rec.message}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PROGRESSION SCREEN
+// ═══════════════════════════════════════════════════════════════════════
+
+function renderProgression() {
+  const ladder = document.getElementById('progLadder');
+  const currentIdx = PROTOCOLS.findIndex(p => p.id === cfg.selectedProtocolId);
+
+  ladder.innerHTML = PROTOCOLS.map((p, i) => `
+    <div class="prog-rung ${i === currentIdx ? 'current-rung' : i < currentIdx ? 'done-rung' : ''}">
+      <div class="prog-rung-num">${i+1}</div>
+      <div class="prog-rung-info">
+        <div class="prog-rung-name">${p.name}</div>
+        <div class="prog-rung-desc">${p.desc}</div>
+      </div>
+      ${i === currentIdx ? '<div class="prog-rung-tag">CURRENT</div>' : ''}
+      ${i < currentIdx ? '<div class="prog-rung-check">✓</div>' : ''}
+    </div>
+  `).join('');
+
+  // Next session recommendation from most recent session
+  const lastSession = sessions[0];
+  const recEl = document.getElementById('nextRec');
+  if (lastSession && lastSession.recommendation) {
+    const rec = lastSession.recommendation;
+    const recColorMap = { advance:'var(--green)', stay:'var(--accent)', regress:'var(--yellow)' };
+    const color = recColorMap[rec.type] || 'var(--text-dim)';
+    recEl.innerHTML = `
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-dimmer);margin-bottom:6px">
+        BASED ON: ${lastSession.protocolName} · ${new Date(lastSession.date).toLocaleDateString()}
+      </div>
+      <div style="font-family:var(--display);font-weight:700;font-size:17px;color:${color};margin-bottom:6px">
+        ${rec.headline}
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);line-height:1.7">
+        ${rec.message}
+      </div>
+    `;
+    recEl.style.borderLeftColor = color;
+    recEl.style.borderLeft = `3px solid ${color}`;
+  } else {
+    recEl.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--text-dimmer)">Complete a session to generate recommendation.</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════════════
+
+function clearLocalData() {
+  if (!confirm('Clear all local session data? GitHub copy is unaffected.')) return;
+  sessions = [];
+  localStorage.removeItem('vo2_sessions_cache');
+  renderHistory();
+  renderProgression();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════
+
+async function init() {
+  // Load cached sessions
+  const cached = localStorage.getItem('vo2_sessions_cache');
+  if (cached) { try { sessions = JSON.parse(cached); } catch(e){} }
+
+  // Populate settings fields
+  document.getElementById('tokenInput').value = cfg.ghToken;
+  document.getElementById('repoInput').value = cfg.ghRepo;
+  document.getElementById('filePathInput').value = cfg.ghFilePath;
+
+  renderSetupPanel();
+
+  // Show setup modal if not configured
+  if (!localStorage.getItem('vo2_setupDone')) {
+    document.getElementById('setupModal').classList.add('show');
+  } else if (cfg.ghToken && cfg.ghRepo) {
+    // Pull latest data from GitHub on load
+    pullFromGitHub();
+  }
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+}
+
+init();
+</script>
+</body>
+</html>
