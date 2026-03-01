@@ -1,8 +1,11 @@
-const CACHE_NAME = 'vo2max-v1';
+const CACHE_NAME = 'vo2max-v2';
+const BASE = '/vo2max-tracker';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/manifest.json',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
@@ -22,13 +25,35 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // For GitHub API calls, always go network-first
-  if (e.request.url.includes('api.github.com')) {
-    e.respondWith(fetch(e.request).catch(() => new Response('{}', { headers: { 'Content-Type': 'application/json' }})));
+  const url = new URL(e.request.url);
+
+  // Always network-first for GitHub API
+  if (url.hostname === 'api.github.com') {
+    e.respondWith(
+      fetch(e.request).catch(() => new Response('{}', {
+        headers: { 'Content-Type': 'application/json' }
+      }))
+    );
     return;
   }
-  // For app assets, cache-first
+
+  // Always network-first for Google Fonts
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    e.respondWith(fetch(e.request).catch(() => new Response('')));
+    return;
+  }
+
+  // Cache-first for app assets
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(response => {
+        if (response && response.status === 200 && url.origin === self.location.origin) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return response;
+      });
+    })
   );
 });
