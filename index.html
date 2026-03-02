@@ -268,7 +268,7 @@ body::before {
 .badge-advanced   { color: var(--warn); border-color: var(--warn); }
 .badge-elite      { color: var(--red); border-color: var(--red); }
 
-.protocol-meta {
+..protocol-meta {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--text-dim);
@@ -276,7 +276,7 @@ body::before {
 
 /* ─── ZONE TABLE ─────────────────────────────────────── */
 .zone-table { width: 100%; border-collapse: collapse; }
-.zone-table td { padding: 8px 10px; font-family: var(--mono); font-size: 11px; border-bottom: 1px solid var(--border); }
+.zone-table td { padding: 8px 10px; font-family: var(--mono); font-size: 15px; border-bottom: 1px solid var(--border); }
 .zone-table tr:last-child td { border-bottom: none; }
 .zone-row-active { background: rgba(255,255,255,0.04); }
 
@@ -331,7 +331,7 @@ body::before {
 
 .timer-phase-label {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 18px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -341,7 +341,7 @@ body::before {
 .timer-value {
   font-family: var(--display);
   font-weight: 900;
-  font-size: 88px;
+  font-size: 120px;
   line-height: 1;
   letter-spacing: -0.03em;
   transition: color 0.3s;
@@ -349,7 +349,7 @@ body::before {
 
 .timer-sublabel {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 17px;
   color: var(--text-dim);
   margin-top: 8px;
 }
@@ -406,7 +406,7 @@ body::before {
   background: var(--surface2);
   border-left: 3px solid var(--accent);
   font-family: var(--body);
-  font-size: 13px;
+  font-size: 18px;
   color: var(--text);
   line-height: 1.5;
   min-height: 48px;
@@ -464,7 +464,7 @@ body::before {
 .live-speed-val {
   font-family: var(--display);
   font-weight: 700;
-  font-size: 26px;
+  font-size: 42px;
   color: var(--warn);
   min-width: 52px;
   text-align: center;
@@ -477,7 +477,7 @@ body::before {
   color: var(--warn);
   font-family: var(--display);
   font-weight: 700;
-  font-size: 20px;
+  font-size: 26px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   -webkit-appearance: none;
@@ -1199,8 +1199,8 @@ function renderSetupPanel() {
   // Zone chips for timer
   document.getElementById('zoneChips').innerHTML = zones.map(z => `
     <div class="zone-chip" id="chip-${z.id}" style="--zone-color:${z.color};--zone-rgb:${z.rgb}">
-      <div style="font-size:9px;letter-spacing:0.05em">${z.name.replace('ZONE ','Z')}</div>
-      <div style="font-size:9px;margin-top:2px">${z.lo}–${z.hi}</div>
+      <div style="font-size:14px;letter-spacing:0.05em">${z.name.replace('ZONE ','Z')}</div>
+      <div style="font-size:14px;margin-top:2px">${z.lo}–${z.hi}</div>
     </div>
   `).join('');
 
