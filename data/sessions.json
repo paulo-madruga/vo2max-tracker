@@ -1,1 +1,39 @@
-[]
+[
+  {
+    "id": "1772974962461",
+    "date": "2026-03-08T13:02:42.461Z",
+    "protocolId": "foundation",
+    "protocolName": "FOUNDATION",
+    "targetSpeed": 6.5,
+    "easySpeed": 3,
+    "totalSeconds": 1980,
+    "intervalLogs": [
+      {
+        "intervalIdx": 0,
+        "targetSpeed": 6.5,
+        "startSpeed": 6.5,
+        "drops": [],
+        "finalSpeed": 6.5
+      },
+      {
+        "intervalIdx": 1,
+        "targetSpeed": 6.5,
+        "startSpeed": 6.5,
+        "drops": [],
+        "finalSpeed": 6.5
+      },
+      {
+        "intervalIdx": 2,
+        "targetSpeed": 6.5,
+        "startSpeed": 6.5,
+        "drops": [],
+        "finalSpeed": 6.5
+      }
+    ],
+    "recommendation": {
+      "type": "stay",
+      "headline": "CLEAN SESSION — REPEAT ONCE MORE",
+      "message": "All intervals held 6.5 mph. One more clean session at this speed, then advance speed by 0.1–0.2 mph OR move to STANDARD."
+    }
+  }
+]
