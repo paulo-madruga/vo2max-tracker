@@ -1,5 +1,42 @@
 [
   {
+    "id": "1774186113031",
+    "date": "2026-03-22T13:28:33.031Z",
+    "protocolId": "foundation",
+    "protocolName": "FOUNDATION",
+    "targetSpeed": 6.5,
+    "easySpeed": 3,
+    "totalSeconds": 1980,
+    "intervalLogs": [
+      {
+        "intervalIdx": 0,
+        "targetSpeed": 6.5,
+        "startSpeed": 6.5,
+        "drops": [],
+        "finalSpeed": 6.5
+      },
+      {
+        "intervalIdx": 1,
+        "targetSpeed": 6.5,
+        "startSpeed": 6.5,
+        "drops": [],
+        "finalSpeed": 6.5
+      },
+      {
+        "intervalIdx": 2,
+        "targetSpeed": 6.5,
+        "startSpeed": 6.5,
+        "drops": [],
+        "finalSpeed": 6.5
+      }
+    ],
+    "recommendation": {
+      "type": "advance",
+      "headline": "READY TO ADVANCE → STANDARD",
+      "message": "2 consecutive clean sessions at 6.5 mph. Option A: increase speed to 6.6–6.7 mph and stay on FOUNDATION. Option B: move to STANDARD at current speed."
+    }
+  },
+  {
     "id": "1773580197896",
     "date": "2026-03-15T13:09:57.896Z",
     "protocolId": "foundation",
