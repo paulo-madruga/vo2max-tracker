@@ -1023,7 +1023,7 @@ function getZones() {
 const PROTOCOLS = [
   {
     id:'foundation', name:'FOUNDATION', badge:'foundation', badgeText:'ENTRY',
-    desc:'3 × 3 min work / 3 min recovery', warmupMin:10, intervals:3, workSec:180, recoverySec:180, cooldownMin:5,
+    desc:'3 × 3 min work / 3 min recovery', warmupMin:10, intervals:3, workSec:180, recoverySec:180, cooldownMin:3,
     guidance:{
       warmup:   'Gradual build. 2 easy strides at 3:00. Legs loose, breathing open.',
       work:     'Zone 4. HR 130–156. Speech reduced. Controlled hard effort — not a sprint.',
@@ -1033,7 +1033,7 @@ const PROTOCOLS = [
   },
   {
     id:'standard', name:'STANDARD', badge:'standard', badgeText:'TARGET',
-    desc:'4 × 4 min work / 3 min recovery', warmupMin:12, intervals:4, workSec:240, recoverySec:180, cooldownMin:5,
+    desc:'4 × 4 min work / 3 min recovery', warmupMin:10, intervals:4, workSec:240, recoverySec:180, cooldownMin:3,
     guidance:{
       warmup:   '12 min build — non-negotiable. 2 progressive strides in final 3 min.',
       work:     'High Zone 4 → Zone 5. HR 130–164 by min 2–4. 1–2 word speech only. Do NOT red-line interval 1.',
@@ -1043,7 +1043,7 @@ const PROTOCOLS = [
   },
   {
     id:'compressed', name:'COMPRESSED', badge:'advanced', badgeText:'ADVANCED',
-    desc:'4 × 4 min work / 2.5 min recovery', warmupMin:12, intervals:4, workSec:240, recoverySec:150, cooldownMin:5,
+    desc:'4 × 4 min work / 2.5 min recovery', warmupMin:10, intervals:4, workSec:240, recoverySec:150, cooldownMin:3,
     guidance:{
       warmup:   'Same 12 min build as Standard. Recovery compression makes session harder — do not shorten warmup.',
       work:     'Same Zone 5 target. Same speed. The 30 sec shorter recovery is the overload lever.',
@@ -1053,7 +1053,7 @@ const PROTOCOLS = [
   },
   {
     id:'advanced', name:'ADVANCED', badge:'elite', badgeText:'ELITE',
-    desc:'5 × 4 min work / 2.5 min recovery', warmupMin:12, intervals:5, workSec:240, recoverySec:150, cooldownMin:5,
+    desc:'5 × 4 min work / 2.5 min recovery', warmupMin:10, intervals:5, workSec:240, recoverySec:150, cooldownMin:3,
     guidance:{
       warmup:   '12 min build. Fifth interval will be hardest — conserve on intervals 1–2.',
       work:     'Zone 5 across all 5. Pacing is critical. Gap between interval 1 and 5 is your readiness signal.',
