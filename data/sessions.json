@@ -1,5 +1,49 @@
 [
   {
+    "id": "1782565700194",
+    "date": "2026-06-27T13:08:20.194Z",
+    "protocolId": "standard",
+    "protocolName": "STANDARD",
+    "targetSpeed": 6.4,
+    "easySpeed": 3,
+    "totalSeconds": 2328,
+    "intervalLogs": [
+      {
+        "intervalIdx": 0,
+        "targetSpeed": 6.4,
+        "startSpeed": 6.4,
+        "drops": [],
+        "finalSpeed": 6.4
+      },
+      {
+        "intervalIdx": 1,
+        "targetSpeed": 6.4,
+        "startSpeed": 6.4,
+        "drops": [],
+        "finalSpeed": 6.4
+      },
+      {
+        "intervalIdx": 2,
+        "targetSpeed": 6.4,
+        "startSpeed": 6.4,
+        "drops": [],
+        "finalSpeed": 6.4
+      },
+      {
+        "intervalIdx": 3,
+        "targetSpeed": 6.4,
+        "startSpeed": 6.4,
+        "drops": [],
+        "finalSpeed": 6.4
+      }
+    ],
+    "recommendation": {
+      "type": "stay",
+      "headline": "CLEAN SESSION — REPEAT ONCE MORE",
+      "message": "All intervals held 6.4 mph. One more clean session at this speed, then advance speed by 0.1–0.2 mph OR move to COMPRESSED."
+    }
+  },
+  {
     "id": "1781961540772",
     "date": "2026-06-20T13:19:00.772Z",
     "protocolId": "standard",
